@@ -1,7 +1,8 @@
 import React from 'react';
 import './App.css';
-import {Tabs} from "@mantine/core";
+import {Container, Tabs} from "@mantine/core";
 import {FileSettings, Package, Server2} from "tabler-icons-react";
+import {InventoryTab} from "./InventoryTab";
 
 function App() {
     return (
@@ -11,15 +12,19 @@ function App() {
             }
         })}>
             <Tabs.Tab label={"Inventory"} color={"green"} icon={<Package size={20}/>}>
-                Inventory
+                <InventoryTab/>
             </Tabs.Tab>
 
             <Tabs.Tab label={"State"} color={"blue"} icon={<FileSettings size={20}/>}>
-                State
+                <Container>
+                    State
+                </Container>
             </Tabs.Tab>
 
             <Tabs.Tab label={"Deployment"} color={"red"} icon={<Server2 size={20}/>}>
-                Deployment
+                <Container>
+                    Deployment
+                </Container>
             </Tabs.Tab>
         </Tabs>
     );
