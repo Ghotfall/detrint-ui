@@ -3,6 +3,7 @@
 /web/node_modules
 /web/.pnp
 /web/.pnp.js
+/web/.idea
 
 /web/coverage
 
