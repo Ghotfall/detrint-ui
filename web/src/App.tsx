@@ -1,26 +1,28 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
+import {Tabs} from "@mantine/core";
+import {FileSettings, Package, Server2} from "tabler-icons-react";
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    return (
+        <Tabs position={"center"} grow styles={theme => ({
+            tabControl: {
+                fontSize: theme.fontSizes.md
+            }
+        })}>
+            <Tabs.Tab label={"Inventory"} color={"green"} icon={<Package size={20}/>}>
+                Inventory
+            </Tabs.Tab>
+
+            <Tabs.Tab label={"State"} color={"blue"} icon={<FileSettings size={20}/>}>
+                State
+            </Tabs.Tab>
+
+            <Tabs.Tab label={"Deployment"} color={"red"} icon={<Server2 size={20}/>}>
+                Deployment
+            </Tabs.Tab>
+        </Tabs>
+    );
 }
 
 export default App;
