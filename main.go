@@ -7,6 +7,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"io/fs"
 	"log"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"os"
@@ -18,7 +19,7 @@ var webBuild embed.FS
 
 func main() {
 	// WebUI part
-	uiLn, err := net.Listen("tcp", "127.0.0.1:0")
+	uiLn, err := net.Listen("tcp", "127.0.0.1:7057")
 	if err != nil {
 		log.Fatalf("Failed to create WebUI listener: %v", err)
 	}
@@ -40,7 +41,7 @@ func main() {
 	log.Printf("WebUI address: http://%s", uiLn.Addr())
 
 	// API part
-	apiLn, err := net.Listen("tcp", "127.0.0.1:0")
+	apiLn, err := net.Listen("tcp", "127.0.0.1:7058")
 	if err != nil {
 		log.Fatalf("Failed to create API listener: %v", err)
 	}
@@ -48,6 +49,33 @@ func main() {
 	router := httprouter.New()
 	router.GET("/", func(w http.ResponseWriter, request *http.Request, params httprouter.Params) {
 		_, _ = fmt.Fprint(w, "TEST!")
+	})
+	router.POST("/upload", func(w http.ResponseWriter, request *http.Request, params httprouter.Params) {
+		log.Println("File upload started!")
+
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
+		err := request.ParseMultipartForm(10 << 24)
+		if err != nil {
+			log.Printf("Failed to parse multipart form: %v", err)
+		}
+
+		file, header, err := request.FormFile("file")
+		if err != nil {
+			log.Printf("Failed to retrieve file: %v", err)
+		}
+		defer func(file multipart.File) {
+			err := file.Close()
+			if err != nil {
+				log.Printf("Failed to close file: %v", err)
+			}
+		}(file)
+
+		log.Printf("Uploaded File: %s", header.Filename)
+		log.Printf("File Size: %d", header.Size)
+		log.Printf("MIME Header: %+v\n", header.Header)
+
+		_, _ = fmt.Fprint(w, `{"result": "Success!"}`)
 	})
 
 	apiServer := &http.Server{Handler: router}
