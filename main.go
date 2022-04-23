@@ -3,22 +3,24 @@ package main
 import (
 	"context"
 	"embed"
+	"fmt"
+	"github.com/julienschmidt/httprouter"
 	"io/fs"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"time"
 )
 
 //go:embed web/build
 var webBuild embed.FS
 
 func main() {
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	// WebUI part
+	uiLn, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		log.Fatalf("Failed to create listener: %v", err)
+		log.Fatalf("Failed to create WebUI listener: %v", err)
 	}
 
 	sub, err := fs.Sub(webBuild, "web/build")
@@ -26,26 +28,50 @@ func main() {
 		log.Fatalf("Failed to create fs subtree: %v", err)
 	}
 
-	server := &http.Server{Handler: http.FileServer(http.FS(sub))}
+	uiServer := &http.Server{Handler: http.FileServer(http.FS(sub))}
 	go func() {
-		err := server.Serve(ln)
+		err := uiServer.Serve(uiLn)
 		if err == http.ErrServerClosed {
-			log.Println("Server closed!")
+			log.Println("WebUI server is closed!")
 		} else if err != nil {
-			log.Fatalf("Failed to start server: %v", err)
+			log.Fatalf("Failed to start WebUI server: %v", err)
 		}
 	}()
+	log.Printf("WebUI address: http://%s", uiLn.Addr())
 
-	log.Printf("Address: http://%s", ln.Addr())
+	// API part
+	apiLn, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		log.Fatalf("Failed to create API listener: %v", err)
+	}
 
+	router := httprouter.New()
+	router.GET("/", func(w http.ResponseWriter, request *http.Request, params httprouter.Params) {
+		_, _ = fmt.Fprint(w, "TEST!")
+	})
+
+	apiServer := &http.Server{Handler: router}
+	go func() {
+		err := apiServer.Serve(apiLn)
+		if err == http.ErrServerClosed {
+			log.Println("API server is closed!")
+		} else if err != nil {
+			log.Fatalf("Failed to start API server: %v", err)
+		}
+	}()
+	log.Printf("API address: http://%s", apiLn.Addr())
+
+	// Shutdown
 	sign := make(chan os.Signal, 1)
 	signal.Notify(sign, os.Interrupt)
 	<-sign
 
-	timeout, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	err = server.Shutdown(timeout)
+	err = uiServer.Shutdown(context.Background())
 	if err != nil {
-		log.Fatalf("Failed to stop server: %v", err)
+		log.Fatalf("Failed to stop WebUI server: %v", err)
+	}
+	err = apiServer.Shutdown(context.Background())
+	if err != nil {
+		log.Fatalf("Failed to stop API server: %v", err)
 	}
 }
