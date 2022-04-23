@@ -1,10 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
+	"github.com/ghotfall/detrint/inv"
 	"github.com/julienschmidt/httprouter"
+	"github.com/pelletier/go-toml/v2"
+	"io"
 	"io/fs"
 	"log"
 	"mime/multipart"
@@ -75,7 +80,26 @@ func main() {
 		log.Printf("File Size: %d", header.Size)
 		log.Printf("MIME Header: %+v\n", header.Header)
 
-		_, _ = fmt.Fprint(w, `{"result": "Success!"}`)
+		buffer := bytes.NewBuffer(nil)
+		_, err = io.Copy(buffer, file)
+		if err != nil {
+			log.Printf("Failed to read file to buffer: %v", err)
+		}
+
+		var i inv.Inventory
+		err = toml.Unmarshal(buffer.Bytes(), &i)
+		if err != nil {
+			log.Printf("Failed to unmarshal inventory file: %v", err)
+		}
+
+		log.Printf("Inventory: %v", i)
+
+		iJson, err := json.Marshal(i)
+		if err != nil {
+			log.Printf("Failed to marshal inventory into JSON: %v", err)
+		}
+
+		_, _ = w.Write(iJson)
 	})
 
 	apiServer := &http.Server{Handler: router}

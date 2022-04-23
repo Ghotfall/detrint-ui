@@ -1,9 +1,28 @@
 import {Badge, Button, Container, Grid, Group, ScrollArea, Stack, Text} from "@mantine/core";
-import React from "react";
+import React, {useState} from "react";
 import {Upload} from "tabler-icons-react";
 import {Dropzone, DropzoneStatus} from "@mantine/dropzone";
 
+declare interface Inventory {
+    Machines: { [key: string]: Machine};
+    Groups: { [key: string]: Groups};
+}
+
+declare interface Machine {
+    Address: string;
+    Username: string;
+    Password: string;
+    Variables: { [key: string]: any};
+}
+
+declare interface Groups {
+    Members: string[];
+    Variables: { [key: string]: any};
+}
+
 export function InventoryTab() {
+    const [inv, setInv] = useState<Inventory>({Groups: {}, Machines: {}});
+
     function DropzoneStatus(status: DropzoneStatus) {
         return <Group position={"center"}>
             <Upload size={20}/>
@@ -21,8 +40,11 @@ export function InventoryTab() {
             "http://127.0.0.1:7058/upload",
             {method: 'POST', body: formData}
         )
-            .then(r => r.json())
-            .then(r => console.log(r))
+            .then(r => r.json() as Promise<Inventory>)
+            .then(r => {
+                setInv(r)
+                console.log(r)
+            })
             .catch(reason => console.log(reason))
     }
 
@@ -47,22 +69,20 @@ export function InventoryTab() {
                     <ScrollArea style={{flex: 1}}>
                         <Stack spacing={"xs"}>
                             <Badge color={"green"} variant={"dot"}>Servers</Badge>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
+                            {
+                                Object
+                                    .entries(inv.Machines)
+                                    .map(([key, value]) =>
+                                        <Button
+                                            key={key}
+                                            color={"gray"}
+                                            variant={"subtle"}
+                                            onClick={() => console.log(value)}
+                                        >
+                                            {key}
+                                        </Button>
+                                    )
+                            }
                             <Badge color={"blue"} variant={"dot"}>Groups</Badge>
                             <Button color={"gray"} variant={"subtle"}>test</Button>
                             <Button color={"gray"} variant={"subtle"}>test</Button>
