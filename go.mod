@@ -1,4 +1,4 @@
-module detrint-ui
+module github.com/ghotfall/detrint-ui
 
 go 1.18
 
