@@ -29,6 +29,8 @@ func Register(router *httprouter.Router) {
 	router.Handle(http.MethodPost, prefix, UploadInventory)
 	router.Handle(http.MethodGet, machinesURL, GetAllMachines)
 	router.Handle(http.MethodGet, machineURL, GetMachine)
+	router.Handle(http.MethodGet, groupsURL, GetAllGroups)
+	router.Handle(http.MethodGet, groupURL, GetGroup)
 }
 
 func GetInventoryStatus(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -132,9 +134,46 @@ func GetMachine(w http.ResponseWriter, _ *http.Request, p httprouter.Params) {
 
 	machineBytes, err := json.Marshal(map[string]inv.Machine{serverName: machine})
 	if err != nil {
-		log.Printf("Failed to marshal machine %s: %v", serverName, err)
+		log.Printf("Failed to marshal machine '%s': %v", serverName, err)
 	}
 
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(machineBytes)
+}
+
+func GetAllGroups(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+	if inventory == nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	groupsBytes, err := json.Marshal(inventory.Groups)
+	if err != nil {
+		log.Printf("Failed to marshal groups: %v", err)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(groupsBytes)
+}
+
+func GetGroup(w http.ResponseWriter, _ *http.Request, p httprouter.Params) {
+	if inventory == nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	groupName := p.ByName("name")
+	group, ok := inventory.Groups[groupName]
+	if !ok {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	groupBytes, err := json.Marshal(map[string]inv.Group{groupName: group})
+	if err != nil {
+		log.Printf("Failed to marshal group '%s': %v", groupName, err)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(groupBytes)
 }
