@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"embed"
-	"github.com/ghotfall/detrint-ui/api/inv"
+	"github.com/ghotfall/detrint-ui/api"
 	"github.com/julienschmidt/httprouter"
 	"io/fs"
 	"log"
@@ -46,7 +46,7 @@ func main() {
 	}
 
 	router := httprouter.New()
-	inv.Register(router)
+	api.Register(router)
 
 	apiServer := &http.Server{Handler: router}
 	go func() {

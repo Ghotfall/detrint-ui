@@ -3,7 +3,6 @@ package inv
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/ghotfall/detrint/inv"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pelletier/go-toml/v2"
@@ -13,10 +12,20 @@ import (
 	"net/http"
 )
 
+const (
+	prefix      = "/inv"
+	machinesURL = prefix + "/machines"
+	machineURL  = machinesURL + "/:name"
+	groupsURL   = prefix + "/groups"
+	groupURL    = groupsURL + "/:name"
+)
+
+var (
+	inventory *inv.Inventory = nil
+)
+
 func Register(router *httprouter.Router) {
-	router.GET("/", func(w http.ResponseWriter, request *http.Request, params httprouter.Params) {
-		_, _ = fmt.Fprint(w, "TEST!")
-	})
+	router.Handle(http.MethodGet, prefix, GetInventoryStatus)
 
 	router.POST("/upload", func(w http.ResponseWriter, request *http.Request, params httprouter.Params) {
 		log.Println("File upload started!")
@@ -64,4 +73,33 @@ func Register(router *httprouter.Router) {
 
 		_, _ = w.Write(iJson)
 	})
+}
+
+func GetInventoryStatus(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	res := struct {
+		Available bool           `json:"available"`
+		Inventory *inv.Inventory `json:"inventory,omitempty"`
+	}{
+		Available: false,
+		Inventory: nil,
+	}
+
+	if inventory != nil {
+		res.Available = true
+	}
+
+	full := r.URL.Query().Get("full")
+	if full == "true" {
+		res.Inventory = inventory
+	}
+
+	resBytes, err := json.Marshal(res)
+	if err != nil {
+		log.Printf("Failed to marshal GetInventoryStatus response: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(resBytes)
 }
