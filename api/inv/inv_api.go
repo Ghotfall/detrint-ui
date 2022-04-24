@@ -27,6 +27,8 @@ var (
 func Register(router *httprouter.Router) {
 	router.Handle(http.MethodGet, prefix, GetInventoryStatus)
 	router.Handle(http.MethodPost, prefix, UploadInventory)
+	router.Handle(http.MethodGet, machinesURL, GetAllMachines)
+	router.Handle(http.MethodGet, machineURL, GetMachine)
 }
 
 func GetInventoryStatus(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -98,4 +100,41 @@ func UploadInventory(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 	inventory = &i
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func GetAllMachines(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+	if inventory == nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	machinesBytes, err := json.Marshal(inventory.Machines)
+	if err != nil {
+		log.Printf("Failed to marshal machines: %v", err)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(machinesBytes)
+}
+
+func GetMachine(w http.ResponseWriter, _ *http.Request, p httprouter.Params) {
+	if inventory == nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	serverName := p.ByName("name")
+	machine, ok := inventory.Machines[serverName]
+	if !ok {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	machineBytes, err := json.Marshal(map[string]inv.Machine{serverName: machine})
+	if err != nil {
+		log.Printf("Failed to marshal machine %s: %v", serverName, err)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(machineBytes)
 }
