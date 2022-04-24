@@ -26,56 +26,10 @@ var (
 
 func Register(router *httprouter.Router) {
 	router.Handle(http.MethodGet, prefix, GetInventoryStatus)
-
-	router.POST("/upload", func(w http.ResponseWriter, request *http.Request, params httprouter.Params) {
-		log.Println("File upload started!")
-
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-
-		err := request.ParseMultipartForm(10 << 24)
-		if err != nil {
-			log.Printf("Failed to parse multipart form: %v", err)
-		}
-
-		file, header, err := request.FormFile("file")
-		if err != nil {
-			log.Printf("Failed to retrieve file: %v", err)
-		}
-		defer func(file multipart.File) {
-			err := file.Close()
-			if err != nil {
-				log.Printf("Failed to close file: %v", err)
-			}
-		}(file)
-
-		log.Printf("Uploaded File: %s", header.Filename)
-		log.Printf("File Size: %d", header.Size)
-		log.Printf("MIME Header: %+v\n", header.Header)
-
-		buffer := bytes.NewBuffer(nil)
-		_, err = io.Copy(buffer, file)
-		if err != nil {
-			log.Printf("Failed to read file to buffer: %v", err)
-		}
-
-		var i inv.Inventory
-		err = toml.Unmarshal(buffer.Bytes(), &i)
-		if err != nil {
-			log.Printf("Failed to unmarshal inventory file: %v", err)
-		}
-
-		log.Printf("Inventory: %v", i)
-
-		iJson, err := json.Marshal(i)
-		if err != nil {
-			log.Printf("Failed to marshal inventory into JSON: %v", err)
-		}
-
-		_, _ = w.Write(iJson)
-	})
+	router.Handle(http.MethodPost, prefix, UploadInventory)
 }
 
-func GetInventoryStatus(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func GetInventoryStatus(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	res := struct {
 		Available bool           `json:"available"`
 		Inventory *inv.Inventory `json:"inventory,omitempty"`
@@ -102,4 +56,46 @@ func GetInventoryStatus(w http.ResponseWriter, r *http.Request, p httprouter.Par
 
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(resBytes)
+}
+
+func UploadInventory(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	err := r.ParseMultipartForm(10 << 24)
+	if err != nil {
+		log.Printf("Failed to parse multipart form: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	file, _, err := r.FormFile("inv")
+	if err != nil {
+		log.Printf("Failed to retrieve file: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer func(file multipart.File) {
+		err := file.Close()
+		if err != nil {
+			log.Printf("Failed to close file: %v", err)
+		}
+	}(file)
+
+	buffer := bytes.NewBuffer(nil)
+	_, err = io.Copy(buffer, file)
+	if err != nil {
+		log.Printf("Failed to read file to buffer: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var i inv.Inventory
+	err = toml.Unmarshal(buffer.Bytes(), &i)
+	if err != nil {
+		log.Printf("Failed to unmarshal inventory file: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	inventory = &i
+
+	w.WriteHeader(http.StatusCreated)
 }
