@@ -1,4 +1,4 @@
-import {Badge, Button, Container, Grid, Group, ScrollArea, Stack, Text} from "@mantine/core";
+import {Badge, Button, Container, Grid, Group, ScrollArea, Stack, Text, Title} from "@mantine/core";
 import React, {useState} from "react";
 import {Upload} from "tabler-icons-react";
 import {Dropzone, DropzoneStatus} from "@mantine/dropzone";
@@ -20,8 +20,14 @@ declare interface Groups {
     Variables: { [key: string]: any};
 }
 
+declare interface CurrentObj {
+    Name: string;
+    Obj: Machine | Groups | null
+}
+
 export function InventoryTab() {
     const [inv, setInv] = useState<Inventory>({Groups: {}, Machines: {}});
+    const [current, setCurrent] = useState<CurrentObj>({Name: "", Obj: null});
 
     function DropzoneStatus(status: DropzoneStatus) {
         return <Group position={"center"}>
@@ -48,6 +54,57 @@ export function InventoryTab() {
             .catch(reason => console.log(reason))
     }
 
+    function getMachines() {
+        const m = Object.entries(inv.Machines)
+
+        return m.length ? m
+            .map(([key, value]) =>
+                <Button
+                    key={key}
+                    color={"gray"}
+                    variant={"subtle"}
+                    onClick={() => setCurrent({Name: key, Obj: value})}
+                >
+                    {key}
+                </Button>
+            ) : <Text align={"center"}>No servers</Text>;
+    }
+
+    function getGroups() {
+        const m = Object.entries(inv.Groups)
+
+        return m.length ? m
+            .map(([key, value]) =>
+                <Button
+                    key={key}
+                    color={"gray"}
+                    variant={"subtle"}
+                    onClick={() => setCurrent({Name: key, Obj: value})}
+                >
+                    {key}
+                </Button>
+            ) : <Text align={"center"}>No groups</Text>;
+    }
+
+    function showInfo(e: CurrentObj) {
+        if (e.Obj == null) {
+            return <Text>Select server or group</Text>
+        } else if ('Address' in e.Obj) {
+            return <Stack>
+                <Title>{e.Name}</Title>
+                <Text>{e.Obj.Address}</Text>
+                <Text>{e.Obj.Username}</Text>
+                <Text>{e.Obj.Password}</Text>
+                {Object.entries(e.Obj.Variables).map(([key, value]) => <Text>{key}</Text>)}
+            </Stack>
+        } else if ('Members' in e.Obj) {
+            return <Stack>
+                <Title>{e.Name}</Title>
+                <Text>{e.Obj.Members}</Text>
+            </Stack>
+        }
+    }
+
     return <Container>
         <Grid columns={3}>
             <Grid.Col xs={3} sm={1}>
@@ -62,42 +119,19 @@ export function InventoryTab() {
                         {status => DropzoneStatus(status)}
                     </Dropzone>
 
-                    {/*<Button color={"green"} variant={"outline"} fullWidth leftIcon={<Upload size={20}/>}>*/}
-                    {/*    Open inventory file*/}
-                    {/*</Button>*/}
-
                     <ScrollArea style={{flex: 1}}>
                         <Stack spacing={"xs"}>
                             <Badge color={"green"} variant={"dot"}>Servers</Badge>
-                            {
-                                Object
-                                    .entries(inv.Machines)
-                                    .map(([key, value]) =>
-                                        <Button
-                                            key={key}
-                                            color={"gray"}
-                                            variant={"subtle"}
-                                            onClick={() => console.log(value)}
-                                        >
-                                            {key}
-                                        </Button>
-                                    )
-                            }
+                            {getMachines()}
                             <Badge color={"blue"} variant={"dot"}>Groups</Badge>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
-                            <Button color={"gray"} variant={"subtle"}>test</Button>
+                            {getGroups()}
                         </Stack>
                     </ScrollArea>
                 </Stack>
             </Grid.Col>
 
             <Grid.Col xs={3} sm={2}>
-                Inventory
+                {showInfo(current)}
             </Grid.Col>
         </Grid>
     </Container>;
