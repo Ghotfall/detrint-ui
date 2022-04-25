@@ -4,6 +4,8 @@ import {Container, Tabs} from "@mantine/core";
 import {FileSettings, Package, Server2} from "tabler-icons-react";
 import {InventoryTab} from "./InventoryTab";
 
+export const api_endpoint = "http://127.0.0.1:7058"
+
 function App() {
     return (
         <Tabs position={"center"} grow styles={theme => ({

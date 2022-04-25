@@ -1,23 +1,30 @@
-import {Badge, Button, Container, Grid, Group, ScrollArea, Stack, Text, Title} from "@mantine/core";
-import React, {useState} from "react";
+import {Badge, Button, Container, Grid, Group, ScrollArea, SimpleGrid, Stack, Text, Title} from "@mantine/core";
+import React, {useEffect, useState} from "react";
 import {Upload} from "tabler-icons-react";
 import {Dropzone, DropzoneStatus} from "@mantine/dropzone";
+import {api_endpoint} from "./App";
+import {showNotification} from "@mantine/notifications";
 
 declare interface Inventory {
-    Machines: { [key: string]: Machine};
-    Groups: { [key: string]: Groups};
+    machines: { [key: string]: Machine };
+    groups: { [key: string]: Groups };
 }
 
 declare interface Machine {
-    Address: string;
-    Username: string;
-    Password: string;
-    Variables: { [key: string]: any};
+    address: string;
+    username: string;
+    password: string;
+    variables?: { [key: string]: any };
 }
 
 declare interface Groups {
-    Members: string[];
-    Variables: { [key: string]: any};
+    members: string[];
+    variables?: { [key: string]: any };
+}
+
+declare interface InvResponse {
+    available: boolean;
+    inventory?: Inventory;
 }
 
 declare interface CurrentObj {
@@ -26,8 +33,31 @@ declare interface CurrentObj {
 }
 
 export function InventoryTab() {
-    const [inv, setInv] = useState<Inventory>({Groups: {}, Machines: {}});
+    const [inv, setInv] = useState<Inventory>({groups: {}, machines: {}});
     const [current, setCurrent] = useState<CurrentObj>({Name: "", Obj: null});
+
+    useEffect(() => {
+        checkInventory()
+    }, [])
+
+    function checkInventory() {
+        fetch(api_endpoint + "/inv?full=true", {method: 'GET'})
+            .then(r => r.json() as Promise<InvResponse>)
+            .then(r => {
+                if (r.available && r.inventory !== undefined) {
+                    setInv(r.inventory)
+                } else {
+                    setInv({groups: {}, machines: {}})
+                }
+            })
+            .catch(reason => {
+                showNotification({
+                    title: 'An error occurred!',
+                    message: String(reason)
+                })
+                setInv({groups: {}, machines: {}})
+            })
+    }
 
     function DropzoneStatus(status: DropzoneStatus) {
         return <Group position={"center"}>
@@ -38,24 +68,34 @@ export function InventoryTab() {
         </Group>;
     }
 
-    function uploadInventory(files: File[]) {
+    async function uploadInventory(files: File[]) {
         const formData = new FormData()
-        formData.append("file", files[0])
+        formData.append("inv", files[0])
 
-        fetch(
-            "http://127.0.0.1:7058/upload",
+        await fetch(
+            api_endpoint + "/inv",
             {method: 'POST', body: formData}
         )
-            .then(r => r.json() as Promise<Inventory>)
             .then(r => {
-                setInv(r)
-                console.log(r)
+                if (r.status === 201) {
+                    showNotification({
+                        title: 'Inventory upload',
+                        message: 'Inventory has been uploaded!'
+                    })
+                } else {
+                    showNotification({
+                        title: 'Inventory upload',
+                        message: 'Failed to upload inventory. Status: ' + r.status
+                    })
+                }
             })
             .catch(reason => console.log(reason))
+
+        checkInventory()
     }
 
     function getMachines() {
-        const m = Object.entries(inv.Machines)
+        const m = Object.entries(inv.machines)
 
         return m.length ? m
             .map(([key, value]) =>
@@ -71,7 +111,7 @@ export function InventoryTab() {
     }
 
     function getGroups() {
-        const m = Object.entries(inv.Groups)
+        const m = Object.entries(inv.groups)
 
         return m.length ? m
             .map(([key, value]) =>
@@ -89,18 +129,63 @@ export function InventoryTab() {
     function showInfo(e: CurrentObj) {
         if (e.Obj == null) {
             return <Text>Select server or group</Text>
-        } else if ('Address' in e.Obj) {
+        } else if ('address' in e.Obj) {
             return <Stack>
-                <Title>{e.Name}</Title>
-                <Text>{e.Obj.Address}</Text>
-                <Text>{e.Obj.Username}</Text>
-                <Text>{e.Obj.Password}</Text>
-                {Object.entries(e.Obj.Variables).map(([key, value]) => <Text>{key}</Text>)}
+                <Title order={2} align={"center"}>{e.Name}</Title>
+
+                <Title order={5} align={"center"}>Data</Title>
+
+                <SimpleGrid cols={2}>
+                    <Text align={"right"} color={"green"}>Address:</Text>
+                    <Text>{e.Obj.address}</Text>
+
+                    <Text align={"right"} color={"green"}>Username (reserved):</Text>
+                    <Text>{e.Obj.username}</Text>
+
+                    <Text align={"right"} color={"green"}>Password (reserved):</Text>
+                    <Text>{e.Obj.password}</Text>
+                </SimpleGrid>
+
+                <Title order={5} align={"center"}>Variables</Title>
+
+                <SimpleGrid cols={2}>
+                    {e.Obj.variables !== undefined
+                        ? Object.entries(e.Obj.variables).map(
+                            ([key, value]) =>
+                                <>
+                                    <Text align={"right"} color={"green"}>{key}</Text>
+                                    <Text>{String(value)}</Text>
+                                </>)
+                        : <Text>No variables</Text>}
+                </SimpleGrid>
             </Stack>
-        } else if ('Members' in e.Obj) {
+        } else if ('members' in e.Obj) {
             return <Stack>
-                <Title>{e.Name}</Title>
-                <Text>{e.Obj.Members}</Text>
+                <Title order={2} align={"center"}>{e.Name}</Title>
+
+                <Title order={5} align={"center"}>Data</Title>
+
+                <SimpleGrid cols={2}>
+                    <Text align={"right"} color={"blue"}>Members</Text>
+                    <Text>
+                    {e.Obj.members.length !== 0
+                        ? e.Obj.members.join(', ')
+                        : 'No members'}
+                    </Text>
+                </SimpleGrid>
+
+                <Title order={5} align={"center"}>Variables</Title>
+
+                <SimpleGrid cols={2}>
+                    {e.Obj.variables !== undefined
+                        ? Object.entries(e.Obj.variables).map(
+                            ([key, value]) =>
+                                <>
+                                    <Text align={"right"} color={"green"}>{key}</Text>
+                                    <Text>{String(value)}</Text>
+                                </>)
+                        : <Text>No variables</Text>}
+                </SimpleGrid>
             </Stack>
         }
     }

@@ -4,6 +4,7 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import {MantineProvider} from "@mantine/core";
+import {NotificationsProvider} from "@mantine/notifications";
 
 const root = ReactDOM.createRoot(
     document.getElementById('root') as HTMLElement
@@ -11,7 +12,9 @@ const root = ReactDOM.createRoot(
 root.render(
     <React.StrictMode>
         <MantineProvider theme={{colorScheme: 'dark'}} withGlobalStyles withNormalizeCSS>
-            <App/>
+            <NotificationsProvider>
+                <App/>
+            </NotificationsProvider>
         </MantineProvider>
     </React.StrictMode>
 );
