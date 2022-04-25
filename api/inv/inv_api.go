@@ -93,7 +93,7 @@ func UploadInventory(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 
 	var i inv.Inventory
 	err = toml.Unmarshal(buffer.Bytes(), &i)
-	if err != nil {
+	if err != nil || i.Machines == nil || i.Groups == nil {
 		log.Printf("Failed to unmarshal inventory file: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
