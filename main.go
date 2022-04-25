@@ -5,6 +5,7 @@ import (
 	"embed"
 	"github.com/ghotfall/detrint-ui/api"
 	"github.com/julienschmidt/httprouter"
+	"github.com/rs/cors"
 	"io/fs"
 	"log"
 	"net"
@@ -48,7 +49,8 @@ func main() {
 	router := httprouter.New()
 	api.Register(router)
 
-	apiServer := &http.Server{Handler: router}
+	handler := cors.Default().Handler(router)
+	apiServer := &http.Server{Handler: handler}
 	go func() {
 		err := apiServer.Serve(apiLn)
 		if err == http.ErrServerClosed {
