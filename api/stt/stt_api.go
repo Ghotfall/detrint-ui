@@ -20,6 +20,10 @@ var (
 	stateSet state.Set = nil
 )
 
+func GetStateSet() state.Set {
+	return stateSet
+}
+
 func Register(router *httprouter.Router) {
 	router.Handle(http.MethodGet, prefix, GetStateStatus)
 	router.Handle(http.MethodPost, prefix, UploadStateFile)

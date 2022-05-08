@@ -33,6 +33,10 @@ func Register(router *httprouter.Router) {
 	router.Handle(http.MethodGet, groupURL, GetGroup)
 }
 
+func GetInventory() *inv.Inventory {
+	return inventory
+}
+
 func GetInventoryStatus(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	res := struct {
 		Available bool           `json:"available"`

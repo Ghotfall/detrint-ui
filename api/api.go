@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/ghotfall/detrint-ui/api/dpl"
 	"github.com/ghotfall/detrint-ui/api/inv"
 	"github.com/ghotfall/detrint-ui/api/stt"
 	"github.com/julienschmidt/httprouter"
@@ -20,4 +21,5 @@ func Register(router *httprouter.Router) {
 
 	inv.Register(router)
 	stt.Register(router)
+	dpl.Register(router)
 }
