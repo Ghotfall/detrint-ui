@@ -85,6 +85,27 @@ export function StateTab() {
         checkState()
     }
 
+    async function startDeployment() {
+        await fetch(
+            api_endpoint + "/dpl",
+            {method: 'POST'}
+        )
+            .then(r => {
+                if (r.status === 202) {
+                    showNotification({
+                        title: 'Deployment',
+                        message: 'Deployment has been started!'
+                    })
+                } else {
+                    showNotification({
+                        title: 'Deployment',
+                        message: 'Failed to start deployment. Status: ' + r.status
+                    })
+                }
+            })
+            .catch(reason => console.log(reason))
+    }
+
     function getStates() {
         const no_elems = <Text align={"center"}>No states</Text>
 
@@ -168,7 +189,7 @@ export function StateTab() {
                         {status => DropzoneStatus(status)}
                     </Dropzone>
 
-                    <Button size={"xl"}>Deploy State</Button>
+                    <Button onClick={startDeployment} size={"xl"}>Deploy State</Button>
                 </SimpleGrid>
             </Grid.Col>
 
